@@ -9,11 +9,11 @@ class Game{
         this.pickingCards = ["2", "3"],
         this.players = [],
         this.currentPlayer = {},
-        this.interval = null,
         this.issue = 1,
         this.route = 1,
         this.skip =  0,
-        this.requested = null
+        this.requested = {canRequest: false, suit: null},
+        this.finish = false
     }
     
     generateDeck() {
@@ -130,7 +130,7 @@ class Game{
     }
 
     isARequestedCard(){
-        if(this.requested === null){
+        if(this.requested.suit === null){
             return false;
         }else{
             return true;
@@ -151,16 +151,17 @@ class Game{
         let lastCard = this.cardsOnTable[this.cardsOnTable.length - 1];
         let aspiringCard = this.currentPlayer.cardsInHand[index];
 
-        if(this.isAQuestionCardMatch(aspiringCard)){
+        if(!this.isARequestedCard() && this.isAQuestionCardMatch(aspiringCard)){
             console.log("matched question");
             return true;
-        }else if(this.currentPlayer.justPlayed && aspiringCard["rank"] === lastCard["rank"]){
+        }else if(!this.isARequestedCard() && this.currentPlayer.justPlayed && aspiringCard["rank"] === lastCard["rank"]){
             console.log("current player has played and ranks are similar");
             return true;
-        }else if(!this.currentPlayer.justPlayed && this.isAPickingCardMatch(aspiringCard)){
+        }else if(!this.isARequestedCard() && !this.currentPlayer.justPlayed && this.isAPickingCardMatch(aspiringCard)){
             console.log("current player has not played and its a 2/3");
             return true;
         }else if(!this.currentPlayer.justPlayed && this.isARequestedCardMatch(aspiringCard)){
+            this.requested.suit = null;
             console.log("player has not played and there is a requested card");
             return true;
         }else if(!this.currentPlayer.justPlayed && this.issue <= 1 && !this.isARequestedCard() && (lastCard["rank"] == aspiringCard["rank"] || lastCard["suit"] == aspiringCard["suit"])){
@@ -173,7 +174,7 @@ class Game{
     }
 
     addNewPlayer(playerId){
-        this.players.push({playerId:playerId, points:0, cardsInHand: [], justPlayed: false, justPicked: false});
+        this.players.push({playerId:playerId, points:0, cardsInHand: [], justPlayed: false, justPicked: false, cardie:false});
         return this;
     }
 
@@ -189,13 +190,37 @@ class Game{
         this.currentPlayer.justPlayed = false;
         this.currentPlayer.justPicked = false;
         this.skip = 0;
+        this.requested.canRequest = false;
         this.currentPlayer = this.players[playerIndex]; 
 
         return this;
     }
 
-    goToNextPlayer(){
+    requestSuit(requestedSuit){
+        let found = 0;
+        this.suits.forEach(suit => {
+            if(suit == requestedSuit){
+                found++;
+            }
+        });
+        if(found < 1 || !this.requested.canRequest){return null;}
+        this.requested.suit = requestedSuit;
+    }
+
+    callCardie(playerId){
+        if((playerId !== this.currentPlayer["playerId"])){return null;}
+        if(this.currentPlayer.cardie){
+            this.currentPlayer.cardie = false;
+        }else{
+            this.currentPlayer.cardie = true;
+        }    
+    }
+
+    goToNextPlayer(playerId){
+        if((playerId !== this.currentPlayer["playerId"])){return null;}
+
         this.issueCard();
+
         let nextPlayer;
         if(this.route < 0){
             nextPlayer = this.getPlayerIndex(this.currentPlayer.playerId) - this.skip - 1;
@@ -219,21 +244,31 @@ class Game{
         return this;
     }
 
-    setPlay(issue = 1, skip = 0, route = 1, points=2){
+    setPlay(issue = 1, skip = 0, route = 1, points = 2, canFinish = false){
         this.issue = issue;
         this.skip += skip;
         this.route *= route;
         this.currentPlayer.points += points;
+        
+        if(canFinish && this.currentPlayer.cardie && this.currentPlayer.cardsInHand.length > 2){
+            this.currentPlayer.points += 100;
+            this.finish = true;
+        }
+
+        if(this.currentPlayer.cardie && !this.finish){
+            this.currentPlayer.points -= 5;
+        }
     }
 
     play(index, playerId){
-        if((playerId !== this.currentPlayer["playerId"]) || !this.isPlayable(index) || this.currentPlayer.justPicked){ return null; }
+        if((playerId !== this.currentPlayer["playerId"]) || !this.isPlayable(index) || this.currentPlayer.justPicked || this.finish){ return null; }
 
         let aspiringCard = this.currentPlayer.cardsInHand[index];
         if(aspiringCard["rank"] === "A" && this.issue > 1){
             this.setPlay(0, 0, 1, 0);
         }else if(aspiringCard["rank"] === "A" && this.issue <= 1){
             //ask for card
+            this.requested.canRequest = true;
             this.setPlay(1, 0, 1, 6);
         }else if(aspiringCard["rank"] === "2" || aspiringCard["rank"] === "3"){
             this.setPlay(this.issue + parseInt(aspiringCard["rank"]), 0, 1, 5);   
@@ -242,7 +277,7 @@ class Game{
         }else if(aspiringCard["rank"] === "K"){
             this.setPlay(1, 0, -1, 2);
         }else{
-            this.setPlay(1, 0, 1, 4);
+            this.setPlay(1, 0, 1, 4, true);
         }
 
         this.acceptCard(index);

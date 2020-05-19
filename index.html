@@ -7,8 +7,9 @@
 </head>
 <body>
     <button id="pick">pick</button>
-    <input type="text" id="index" placeholder="play"><br/>
     <button id="next">next</button>
+    <input type="text" id="index" placeholder="play"><br/>
+    <input type="text" id="request" placeholder="request"><br/>
     <div id="patty">
 
     </div>
@@ -49,6 +50,10 @@
         });
         document.querySelector("#next").addEventListener("click", () => {
             game.goToNextPlayer();
+            patty();
+        });
+        document.querySelector("#request").addEventListener("change", e => {
+            game.requestSuit(e.target.value);
             patty();
         });
              
