@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardi Nairobi</title>
+</head>
+<body>
+    <button id="pick">pick</button>
+    <input type="text" id="index" placeholder="play"><br/>
+    <button id="next">next</button>
+    <div id="patty">
+
+    </div>
+    <script src="game.js"></script>
+    <script>
+
+          // startTimer(time = 20){
+
+            //     if( time <= 0 || !( typeof(time) === "number")  || isNaN(time) ){return null;}
+
+            //     this.interval = setInterval(() => {
+            //             this.timer = time;
+            //             time--;
+            //             this.goToNextPlayer(false);
+            //     }, 1000)
+                
+            // }
+        const game = new Game();
+
+        game.addNewPlayer("dennis").addNewPlayer("kamau").addNewPlayer("mish").setCurrentPlayer(0).generateDeck().shuffleCards().init();
+        console.log(game.players);
+        for(let i= 0; i < 15; i++){
+            game.goToNextPlayer();
+        }
+
+        paty = document.querySelector('#patty');
+        const patty = () =>{
+            paty.innerHTML = `PLAYER: <br /> ${JSON.stringify(game.currentPlayer.playerId)}<br />Cards in Hand: <br />  ${JSON.stringify(game.currentPlayer.cardsInHand)}<br />Table: <br />  ${JSON.stringify(game.cardsOnTable)}`
+        }
+        patty();
+        document.querySelector("#pick").addEventListener("click", () => {
+            game.issueCard();
+            patty();
+        });
+        document.querySelector("#index").addEventListener("keyup", e => {
+            game.play(parseInt(e.target.value), game.currentPlayer.playerId);
+            patty();
+        });
+        document.querySelector("#next").addEventListener("click", () => {
+            game.goToNextPlayer();
+            patty();
+        });
+             
+    </script>
+</body>
+</html>
