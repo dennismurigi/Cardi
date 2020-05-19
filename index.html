@@ -20,7 +20,7 @@
 
             //     if( time <= 0 || !( typeof(time) === "number")  || isNaN(time) ){return null;}
 
-            //     this.interval = setInterval(() => {
+            //     interval = setInterval(() => {
             //             this.timer = time;
             //             time--;
             //             this.goToNextPlayer(false);
@@ -32,7 +32,7 @@
         game.addNewPlayer("dennis").addNewPlayer("kamau").addNewPlayer("mish").setCurrentPlayer(0).generateDeck().shuffleCards().init();
         console.log(game.players);
         for(let i= 0; i < 15; i++){
-            game.goToNextPlayer();
+            game.goToNextPlayer(game.currentPlayer.playerId);
         }
 
         paty = document.querySelector('#patty');
@@ -49,7 +49,7 @@
             patty();
         });
         document.querySelector("#next").addEventListener("click", () => {
-            game.goToNextPlayer();
+            game.goToNextPlayer(game.currentPlayer.playerId);
             patty();
         });
         document.querySelector("#request").addEventListener("change", e => {
