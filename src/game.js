@@ -7,8 +7,8 @@ class Game{
         this.noneStarters = ["A","2","3","8","J","Q","K"],
         this.questionCards = ["Q", "8"],
         this.noneAnswers = ["K", "J"],
-        this.pickingCards = ["2", "3"],
         this.requestingCards = ["A"],
+        this.pickingCards = ["2", "3"],
         this.skippingCards = ["J"],
         this.routingCards = ["K"],
         this.requestedSuit = null,
@@ -44,18 +44,25 @@ class Game{
 
         return this;
     }
-    
+
+    isASpecialCard(specialCards, comparisonCard = this.cardsOnTable[this.cardsOnTable.length - 1]["rank"]){
+        let found = 0;
+        specialCards.forEach(card => {
+            if(card === comparisonCard){
+                found++;
+            }
+        });
+        if(found > 0){ return true;}
+        return false;
+    }
+
     init(){
         if((this.cardsInDeck.length < 1) || (this.cardsOnTable.length > 1)){ return null; }
 
         let cardFound = false;
         while(!cardFound){
-            let found = 0;
             let randomPosition = Math.floor(Math.random() * this.cardsInDeck.length);
-            this.noneStarters.forEach(ns => {
-                if( ns === this.cardsInDeck[randomPosition]["rank"] ){ found++;}
-            });
-            if(found < 1){
+            if(!this.isASpecialCard(this.noneStarters, this.cardsInDeck[randomPosition]["rank"])){
                 this.cardsOnTable.push(this.cardsInDeck[randomPosition]);
                 this.cardsInDeck.splice(randomPosition, 1);
                 cardFound = true;
@@ -64,7 +71,7 @@ class Game{
 
         return this;
     }
-    
+
     issueCard(){
         if(this.cardsInDeck.length < 1 && this.cardsOnTable.length > 2){
             this.cardsInDeck = this.cardsOnTable.splice(0, this.cardsOnTable.length - 1);
@@ -73,7 +80,7 @@ class Game{
         }
 
         let lastCardRank = this.cardsOnTable[this.cardsOnTable.length - 1]["rank"];
-        if(this.cardsInDeck.length < 1 || (this.currentPlayer.justPlayed && lastCardRank != "8" && lastCardRank != "Q") || this.currentPlayer.justPicked){
+        if(this.cardsInDeck.length < 1 || (this.currentPlayer.justPlayed && !this.isASpecialCard(this.questionCards)) || this.currentPlayer.justPicked || this.finish){
             console.log("already issued");
             return null;
         }
@@ -99,13 +106,7 @@ class Game{
     }
     
     requestSuit(requestedSuit){
-        let found = 0;
-        this.suits.forEach(suit => {
-            if(suit == requestedSuit){
-                found++;
-            }
-        });
-        if(found < 1 || !this.currentPlayer.canRequest){return null;}
+        if(!this.isASpecialCard(this.suits, requestedSuit) || !this.currentPlayer.canRequest || this.finish){return null;}
         this.requestedSuit = requestedSuit;
     }
 
@@ -116,19 +117,6 @@ class Game{
         }else{
             this.currentPlayer.cardie = true;
         }    
-    }
-
-    isASpecialCard(specialRanks, aspiringCardRank = null){
-        let comparison = this.cardsOnTable[this.cardsOnTable.length - 1]["rank"];
-        if(aspiringCardRank !== null){comparison = aspiringCardRank}
-        let found = 0;
-        specialRanks.forEach(rank => {
-            if(rank === comparison){
-                found++;
-            }
-        });
-        if(found > 0){ return true;}
-        return false;
     }
 
     isAQuestionCardMatch(aspiringCard){
@@ -143,7 +131,7 @@ class Game{
     isAPickingCardMatch(aspiringCard){
         let lastCard = this.cardsOnTable[this.cardsOnTable.length - 1];
 
-        if(this.isASpecialCard(this.pickingCards) && (lastCard["rank"] === aspiringCard["rank"] || this.isASpecialCard(this.requestingCards, aspiringCard["rank"]))){
+        if(this.isASpecialCard(this.pickingCards) && (lastCard["rank"] === aspiringCard["rank"] || (this.isASpecialCard(this.requestingCards, aspiringCard["rank"]) && this.issue > 1) )){
             return true;
         }
         return false;
@@ -215,7 +203,7 @@ class Game{
     }
 
     goToNextPlayer(playerId){
-        if((playerId !== this.currentPlayer["playerId"])){return null;}
+        if(playerId !== this.currentPlayer["playerId"] || this.finish){return null;}
 
         this.issueCard();
 
